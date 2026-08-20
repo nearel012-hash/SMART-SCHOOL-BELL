@@ -1,0 +1,1803 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart School Bell — SD Negeri 53 Kota Bengkulu</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        .dark .glass-card {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        @keyframes pulseRing {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .pulse-ring { animation: pulseRing 2s infinite ease-in-out; }
+    </style>
+</head>
+<body class="h-full bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col overflow-hidden">
+
+    <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 lg:px-8 z-30 shrink-0">
+        <div class="flex items-center space-x-3">
+            <div id="brandHeaderLogoContainer" class="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/30 overflow-hidden">
+                <i id="brandHeaderIcon" class="fa-solid fa-bell text-lg animate-bounce"></i>
+                <img id="brandHeaderImg" src="" alt="Logo" class="w-full h-full object-cover hidden">
+            </div>
+            <div>
+                <h1 id="brandSchoolTitle" class="font-extrabold text-sm lg:text-base tracking-tight text-slate-900 dark:text-white flex items-center space-x-2">
+                    <span>SMART SCHOOL BELL</span>
+                    <span id="brandSchoolBadge" class="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 text-[10px] rounded-full uppercase font-bold tracking-wider">SDN 53 Bengkulu</span>
+                </h1>
+                <p id="brandSchoolAddressSub" class="text-[11px] text-slate-500 dark:text-slate-400">Jl. Contoh No. 53, Kota Bengkulu</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <button id="audioInitBtn" onclick="toggleAudioPermission()" class="px-3 py-1.5 rounded-xl bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200 text-xs font-semibold flex items-center space-x-2 border border-amber-300 dark:border-amber-800 transition hover:scale-105 shadow-sm">
+                <i id="audioIcon" class="fa-solid fa-volume-xmark"></i>
+                <span id="audioStatusText">AKTIFKAN AUDIO</span>
+            </button>
+
+            <div id="deviceBadge" onclick="toggleMasterDevice()" class="cursor-pointer px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200 text-xs font-semibold flex items-center space-x-2 border border-emerald-300 dark:border-emerald-800 shadow-sm" title="Klik untuk ubah status Master/Display">
+                <i class="fa-solid fa-crown text-[10px]"></i>
+                <span id="deviceRoleText">MASTER DEVICE</span>
+            </div>
+
+            <button onclick="toggleFullScreen()" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Layar Penuh">
+                <i class="fa-solid fa-expand text-sm"></i>
+            </button>
+
+            <div class="flex items-center space-x-2 pl-3 border-l border-slate-200 dark:border-slate-800">
+                <div class="w-8 h-8 rounded-full bg-indigo-500 text-white font-bold flex items-center justify-center text-xs" id="userAvatar">A</div>
+                <div class="text-left hidden md:block">
+                    <span class="block text-xs font-bold leading-tight" id="userNameDisplay">admin53</span>
+                    <span class="block text-[10px] text-slate-400 uppercase" id="userRoleDisplay">Super Admin</span>
+                </div>
+                <button onclick="openLoginModal()" class="ml-2 text-xs text-slate-400 hover:text-indigo-600" title="Login / Ganti Akun"><i class="fa-solid fa-right-from-bracket"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden">
+        <aside class="w-20 lg:w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between p-3 lg:p-4 z-20 shrink-0">
+            <nav class="space-y-1.5 w-full">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl bg-indigo-600 text-white font-bold text-sm shadow-md shadow-indigo-600/30 transition">
+                    <i class="fa-solid fa-chart-pie w-5 text-center text-base"></i>
+                    <span class="hidden lg:inline">Dashboard</span>
+                </button>
+                <button onclick="switchTab('schedules')" id="nav-schedules" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-sm transition">
+                    <i class="fa-solid fa-calendar-days w-5 text-center text-base"></i>
+                    <span class="hidden lg:inline">Jadwal Bell</span>
+                </button>
+                <button onclick="switchTab('tts')" id="nav-tts" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-sm transition">
+                    <i class="fa-solid fa-microphone-lines w-5 text-center text-base text-amber-500"></i>
+                    <span class="hidden lg:inline">Suara Pengumuman TTS</span>
+                </button>
+                <button onclick="switchTab('gemini')" id="nav-gemini" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-sm transition">
+                    <i class="fa-solid fa-wand-magic-sparkles w-5 text-center text-base text-indigo-500"></i>
+                    <span class="hidden lg:inline">Gemini AI Studio</span>
+                </button>
+                <button onclick="switchTab('calendar')" id="nav-calendar" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-sm transition">
+                    <i class="fa-solid fa-calendar-check w-5 text-center text-base"></i>
+                    <span class="hidden lg:inline">Kalender & Libur</span>
+                </button>
+                <button onclick="switchTab('history')" id="nav-history" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-sm transition">
+                    <i class="fa-solid fa-clock-rotate-left w-5 text-center text-base"></i>
+                    <span class="hidden lg:inline">Riwayat Bell</span>
+                </button>
+                <button onclick="switchTab('settings')" id="nav-settings" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-sm transition">
+                    <i class="fa-solid fa-gear w-5 text-center text-base"></i>
+                    <span class="hidden lg:inline">Pengaturan</span>
+                </button>
+                <button onclick="switchTab('display')" id="nav-display" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-sm transition">
+                    <i class="fa-solid fa-tv w-5 text-center text-base"></i>
+                    <span class="hidden lg:inline">Mode TV Display</span>
+                </button>
+            </nav>
+
+            <div class="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                <div class="hidden lg:block p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800">
+                    <div class="flex items-center justify-between text-xs font-bold mb-1">
+                        <span class="text-slate-500">Auto Bell</span>
+                        <span id="autoBellStatusBadge" class="text-emerald-600 font-extrabold">AKTIF</span>
+                    </div>
+                    <button onclick="toggleAutoBell()" id="autoBellToggleBtn" class="w-full mt-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm">
+                        Matikan Auto Bell
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 overflow-y-auto p-4 lg:p-8 bg-slate-100 dark:bg-slate-950 relative">
+
+            <!-- TAB 1: DASHBOARD -->
+            <div id="tab-dashboard" class="space-y-6 max-w-7xl mx-auto">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="glass-card rounded-3xl p-6 lg:p-8 shadow-xl lg:col-span-2 relative overflow-hidden flex flex-col justify-between">
+                        <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-3 py-1 bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 text-xs font-extrabold rounded-full tracking-wider uppercase">Waktu Indonesia Barat (WIB)</span>
+                            <div class="flex items-center space-x-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                                <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400" id="systemStateText">ONLINE (BACKGROUND WORKER)</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div id="liveClock" class="text-4xl lg:text-7xl font-black tracking-tight text-slate-900 dark:text-white font-mono drop-shadow-sm">07 : 00 : 00</div>
+                            <div id="liveDate" class="text-sm lg:text-base font-semibold text-slate-500 dark:text-slate-400 mt-2">Minggu, 9 Agustus 2026</div>
+                        </div>
+                        <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs font-semibold text-slate-500">
+                            <span id="dashboardSchoolLabel">Sekolah: SD Negeri 53 Kota Bengkulu</span>
+                            <span id="activeDeviceLabel">Master PC</span>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-3xl p-6 lg:p-8 shadow-xl flex flex-col justify-between border-2 border-indigo-500/30">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-xs font-extrabold tracking-wider text-indigo-600 dark:text-indigo-400 uppercase">Bell Berikutnya</span>
+                                <i class="fa-solid fa-stopwatch text-indigo-500 text-lg"></i>
+                            </div>
+                            <h3 id="nextBellName" class="text-lg lg:text-xl font-black text-slate-900 dark:text-white">Bel Masuk Sekolah</h3>
+                            <div id="nextBellTime" class="text-2xl lg:text-3xl font-extrabold text-indigo-600 dark:text-indigo-400 font-mono mt-1">07:15</div>
+                        </div>
+                        <div class="bg-indigo-50 dark:bg-indigo-950/50 rounded-2xl p-4 text-center border border-indigo-200 dark:border-indigo-800/50 mt-4">
+                            <span class="block text-[10px] uppercase font-bold text-indigo-500 mb-1">Hitung Mundur</span>
+                            <div id="countdownTimer" class="text-2xl lg:text-3xl font-black font-mono text-slate-900 dark:text-white">00:02:35</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="glass-card rounded-3xl p-6 shadow-xl border-l-4 border-l-red-500">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center space-x-2">
+                                    <i class="fa-solid fa-triangle-exclamation text-red-500"></i>
+                                    <span>Emergency Siren / Bell Darurat</span>
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-0.5">Bunyikan alarm darurat evakuasi atau keadaan luar biasa.</p>
+                            </div>
+                        </div>
+                        <button onclick="triggerEmergencyBell()" class="w-full py-4 bg-red-600 hover:bg-red-700 text-white font-black text-sm rounded-2xl shadow-lg shadow-red-600/30 transition transform active:scale-95 flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-bullhorn text-lg"></i>
+                            <span>BUNYIKAN EMERGENCY BELL</span>
+                        </button>
+                    </div>
+
+                    <div class="glass-card rounded-3xl p-6 shadow-xl border-l-4 border-l-indigo-500">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center space-x-2">
+                                    <i class="fa-solid fa-bolt text-indigo-500"></i>
+                                    <span>Test Bell Instan</span>
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-0.5">Uji coba suara bell manual secara instan.</p>
+                            </div>
+                        </div>
+                        <div class="flex space-x-3">
+                            <button onclick="testBellQuick(1)" class="flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-2xl shadow-md shadow-indigo-600/20 transition">
+                                <i class="fa-solid fa-bell mr-1"></i> TEST 1×
+                            </button>
+                            <button onclick="testBellQuick(2)" class="flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-2xl shadow-md shadow-indigo-600/20 transition">
+                                <i class="fa-solid fa-bell mr-1"></i> TEST 2×
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card rounded-3xl p-6 shadow-xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-calendar-day text-indigo-500"></i>
+                            <span>Jadwal Bell Hari Ini</span>
+                        </h3>
+                        <button onclick="switchTab('schedules')" class="text-xs font-bold text-indigo-600 hover:underline">Kelola Semua Jadwal →</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-200 dark:border-slate-800 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                                    <th class="py-3 px-4">Waktu</th>
+                                    <th class="py-3 px-4">Nama Bell</th>
+                                    <th class="py-3 px-4">Bunyi</th>
+                                    <th class="py-3 px-4">Jeda</th>
+                                    <th class="py-3 px-4">Audio</th>
+                                    <th class="py-3 px-4">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="todayScheduleTableBody" class="text-xs font-semibold">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: SCHEDULES -->
+            <div id="tab-schedules" class="space-y-6 max-w-7xl mx-auto hidden">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white">Manajemen Jadwal Bell Sekolah</h2>
+                        <p class="text-xs text-slate-500">Atur waktu, hari aktif, jumlah bunyi, jeda, dan file audio kustom untuk setiap jadwal.</p>
+                    </div>
+                    <button onclick="openScheduleModal()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center space-x-2">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Tambah Jadwal</span>
+                    </button>
+                </div>
+
+                <div class="glass-card rounded-3xl p-6 shadow-xl">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-200 dark:border-slate-800 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                                    <th class="py-3 px-4">No</th>
+                                    <th class="py-3 px-4">Waktu</th>
+                                    <th class="py-3 px-4">Nama Bell</th>
+                                    <th class="py-3 px-4">Bunyi</th>
+                                    <th class="py-3 px-4">Jeda</th>
+                                    <th class="py-3 px-4">Audio</th>
+                                    <th class="py-3 px-4">Hari</th>
+                                    <th class="py-3 px-4">Status</th>
+                                    <th class="py-3 px-4 text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fullScheduleTableBody" class="text-xs font-semibold">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: TEXT-TO-SPEECH (TTS) -->
+            <div id="tab-tts" class="space-y-6 max-w-7xl mx-auto hidden">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-microphone-lines text-amber-500"></i>
+                            <span>Pengumuman Suara Otomatis (Text-to-Speech Engine)</span>
+                        </h2>
+                        <p class="text-xs text-slate-500">Ketik pengumuman sekolah, pilih suara Pria/Wanita, dan sistem browser akan membacakannya.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="glass-card rounded-3xl p-6 shadow-xl space-y-4">
+                        <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-comment-dots text-amber-500"></i>
+                            <span>Buat Pengumuman Suara</span>
+                        </h3>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">Pilih Templat Cepat</label>
+                            <select id="ttsTemplateSelect" onchange="applyTtsTemplate()" class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-semibold text-sm mb-3">
+                                <option value="">-- Pilih Templat --</option>
+                                <option value="Perhatian kepada seluruh siswa, jam istirahat pertama telah dimulai. Silakan beristirahat dengan tertib.">Istirahat Pertama</option>
+                                <option value="Perhatian, waktu istirahat telah selesai. Seluruh siswa diminta segera memasuki ruang kelas masing-masing.">Masuk Kelas</option>
+                                <option value="Pengumuman penting, kegiatan belajar mengajar hari ini telah usai. Hati-hati di jalan dan selamat sampai rumah.">Pulang Sekolah</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">Pilihan Karakter Suara</label>
+                            <select id="ttsVoiceGender" class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-semibold text-sm mb-3">
+                                <option value="female">Suara Wanita (Female Voice / Pitch Lebih Tinggi)</option>
+                                <option value="male">Suara Pria (Male Voice / Pitch Lebih Rendah)</option>
+                                <option value="default">Default Sistem Browser</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">Teks Pengumuman</label>
+                            <textarea id="ttsTextInput" rows="4" placeholder="Ketik pengumuman di sini..." class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-semibold text-sm">Perhatian kepada seluruh siswa dan guru, kegiatan sekolah akan segera dimulai.</textarea>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">Kecepatan Bicara (Rate)</label>
+                                <input type="range" id="ttsRate" min="0.7" max="1.3" step="0.1" value="1.0" class="w-full accent-indigo-600">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">Nada Suara (Pitch)</label>
+                                <input type="range" id="ttsPitch" min="0.5" max="1.5" step="0.1" value="1.0" class="w-full accent-indigo-600">
+                            </div>
+                        </div>
+                        <button onclick="speakAnnouncement()" class="w-full py-3.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-extrabold text-xs shadow-md transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-volume-high"></i>
+                            <span>PUTAR SUARA PENGUMUMAN (TTS)</span>
+                        </button>
+                    </div>
+
+                    <div class="glass-card rounded-3xl p-6 shadow-xl space-y-4 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-base font-extrabold text-slate-900 dark:text-white mb-2">Informasi TTS Engine</h3>
+                            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                                Fitur Text-to-Speech (TTS) menggunakan sintesis suara bawaan browser Anda yang mendukung bahasa Indonesia (id-ID). Anda dapat menggunakannya untuk menyampaikan pengumuman mendadak tanpa harus merekam suara manual.
+                            </p>
+                        </div>
+                        <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50">
+                            <span class="text-xs font-extrabold text-amber-700 dark:text-amber-300 block mb-1">Tips Speaker Sekolah</span>
+                            <p class="text-[11px] text-amber-600 dark:text-amber-400">Pastikan perangkat Master PC terhubung ke amplifier audio sekolah dan volume master berada di tingkat optimal.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: GEMINI AI STUDIO -->
+            <div id="tab-gemini" class="space-y-6 max-w-7xl mx-auto hidden">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-wand-magic-sparkles text-indigo-500"></i>
+                            <span>Gemini AI Studio — Generator Pengumuman & Jadwal Sekolah</span>
+                        </h2>
+                        <p class="text-xs text-slate-500">Gunakan kecerdasan buatan Gemini untuk membuat naskah pengumuman sekolah, draf jadwal upacara, atau ide kegiatan otomatis.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="glass-card rounded-3xl p-6 shadow-xl space-y-4">
+                        <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-robot text-indigo-500"></i>
+                            <span>Asisten AI Gemini</span>
+                        </h3>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">Pilih Topik / Perintah AI</label>
+                            <select id="aiPromptType" class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-semibold text-sm mb-3">
+                                <option value="announcement">Buat Naskah Pengumuman Istirahat / Pulang Sekolah</option>
+                                <option value="ceremony">Buat Rekomendasi Susunan Jadwal Upacara Bendera</option>
+                                <option value="motivation">Buat Kalimat Motivasi Disiplin Pagi untuk Siswa SD</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">Catatan Tambahan (Opsional)</label>
+                            <textarea id="aiPromptInput" rows="3" placeholder="Misal: Ingatkan siswa untuk menjaga kebersihan kantin sekolah..." class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-semibold text-sm"></textarea>
+                        </div>
+                        <button onclick="generateGeminiContent()" id="aiSubmitBtn" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-extrabold text-xs shadow-md transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-sparkles"></i>
+                            <span>HASILKAN KONTEN DENGAN GEMINI AI</span>
+                        </button>
+                    </div>
+
+                    <div class="glass-card rounded-3xl p-6 shadow-xl space-y-4 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-base font-extrabold text-slate-900 dark:text-white">Hasil Respon Gemini AI</h3>
+                                <span id="aiStatusBadge" class="text-xs text-slate-400 font-bold">Menunggu Perintah</span>
+                            </div>
+                            <div id="aiResultOutput" class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-medium leading-relaxed min-h-[160px] max-h-[220px] overflow-y-auto text-slate-700 dark:text-slate-300">
+                                Hasil AI akan muncul di sini...
+                            </div>
+                        </div>
+                        <div class="flex space-x-3 pt-2">
+                            <button onclick="copyAiResult()" class="flex-1 py-2.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl font-bold text-xs transition">
+                                <i class="fa-solid fa-copy mr-1"></i> Salin Teks
+                            </button>
+                            <button onclick="saveAiAnnouncement()" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs transition">
+                                <i class="fa-solid fa-floppy-disk mr-1"></i> Simpan ke Riwayat AI
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card rounded-3xl p-6 shadow-xl">
+                    <h3 class="text-sm font-extrabold mb-4">Daftar Pengumuman & Catatan Tersimpan dari Gemini AI</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-200 dark:border-slate-800 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                                    <th class="py-3 px-4">Waktu</th>
+                                    <th class="py-3 px-4">Kategori</th>
+                                    <th class="py-3 px-4">Isi Naskah / Catatan AI</th>
+                                    <th class="py-3 px-4 text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="aiAnnouncementsTableBody" class="text-xs font-semibold">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: CALENDAR -->
+            <div id="tab-calendar" class="space-y-6 max-w-7xl mx-auto hidden">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white">Kalender Sekolah & Hari Libur</h2>
+                        <p class="text-xs text-slate-500">Hari libur nasional atau khusus akan menonaktifkan auto bell secara otomatis.</p>
+                    </div>
+                    <button onclick="openHolidayModal()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center space-x-2">
+                        <i class="fa-solid fa-calendar-plus"></i>
+                        <span>Tambah Hari Libur</span>
+                    </button>
+                </div>
+
+                <div class="glass-card rounded-3xl p-6 shadow-xl">
+                    <h3 class="text-sm font-extrabold mb-4">Daftar Hari Libur & Tanggal Merah Terdaftar</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-200 dark:border-slate-800 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                                    <th class="py-3 px-4">Tanggal</th>
+                                    <th class="py-3 px-4">Nama Hari Libur / Keterangan</th>
+                                    <th class="py-3 px-4">Tipe</th>
+                                    <th class="py-3 px-4 text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="holidayTableBody" class="text-xs font-semibold">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 6: HISTORY -->
+            <div id="tab-history" class="space-y-6 max-w-7xl mx-auto hidden">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white">Riwayat Eksekusi Bell (Bell Log)</h2>
+                        <p class="text-xs text-slate-500">Catatan waktu, mode, perangkat, dan status seluruh eksekusi bell.</p>
+                    </div>
+                    <button onclick="clearHistory()" class="px-4 py-2.5 bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold text-xs rounded-xl transition">
+                        Bersihkan Riwayat
+                    </button>
+                </div>
+
+                <div class="glass-card rounded-3xl p-6 shadow-xl">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-200 dark:border-slate-800 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                                    <th class="py-3 px-4">Waktu Eksekusi</th>
+                                    <th class="py-3 px-4">Nama Bell</th>
+                                    <th class="py-3 px-4">Bunyi</th>
+                                    <th class="py-3 px-4">Mode</th>
+                                    <th class="py-3 px-4">Perangkat</th>
+                                    <th class="py-3 px-4">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody" class="text-xs font-semibold">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 7: SETTINGS -->
+            <div id="tab-settings" class="space-y-6 max-w-7xl mx-auto hidden">
+                <div>
+                    <h2 class="text-xl font-black text-slate-900 dark:text-white">Pengaturan Sistem & Identitas Sekolah</h2>
+                    <p class="text-xs text-slate-500">Kelola identitas sekolah, NPSN, alamat, tahun ajaran, logo, akun login, dan tampilan halaman.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="glass-card rounded-3xl p-6 shadow-xl space-y-4">
+                        <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-school text-indigo-500"></i>
+                            <span>1. Identitas & NPSN Sekolah</span>
+                        </h3>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">Nama Sekolah</label>
+                            <input type="text" id="settingSchoolName" class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-semibold text-sm">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">NPSN</label>
+                                <input type="text" id="settingNpsn" class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-semibold text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">Tahun Ajaran</label>
+                                <input type="text" id="settingAcademicYear" class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-semibold text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">Alamat Sekolah</label>
+                            <input type="text" id="settingSchoolAddress" class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-semibold text-sm">
+                        </div>
+                        <button onclick="saveSchoolIdentity()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-extrabold text-xs shadow-md transition">
+                            SIMPAN IDENTITAS SEKOLAH
+                        </button>
+                    </div>
+
+                    <div class="glass-card rounded-3xl p-6 shadow-xl space-y-4">
+                        <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-image text-indigo-500"></i>
+                            <span>2. Logo Sekolah</span>
+                        </h3>
+                        <p class="text-xs text-slate-500">Upload gambar logo sekolah (PNG/JPG) untuk menggantikan ikon default pada header dan lobi.</p>
+                        <div class="flex items-center space-x-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                            <div class="w-16 h-16 rounded-2xl bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center overflow-hidden border border-indigo-200 dark:border-indigo-800 shrink-0">
+                                <i id="settingLogoPreviewIcon" class="fa-solid fa-bell text-2xl text-indigo-600 dark:text-indigo-400"></i>
+                                <img id="settingLogoPreviewImg" src="" alt="Logo" class="w-full h-full object-cover hidden">
+                            </div>
+                            <div class="flex-1">
+                                <label class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold cursor-pointer inline-block transition shadow-sm">
+                                    <i class="fa-solid fa-upload mr-1"></i> Pilih File Logo
+                                    <input type="file" accept="image/*" onchange="handleLogoUpload(event)" class="hidden">
+                                </label>
+                                <button onclick="removeSchoolLogo()" class="ml-2 px-3 py-2.5 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-xl text-xs font-bold transition">
+                                    Hapus Logo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="glass-card rounded-3xl p-6 shadow-xl space-y-4">
+                        <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-key text-indigo-500"></i>
+                            <span>3. Ubah Username & Password</span>
+                        </h3>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">Pilih Akun yang Diedit</label>
+                            <select id="settingUserSelect" onchange="onUserSelectChange()" class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-semibold text-sm mb-2">
+                                <option value="admin53">admin53 (Super Admin)</option>
+                                <option value="operator1">operator1 (Operator)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">Username Baru</label>
+                            <input type="text" id="settingEditUsername" class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-semibold text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">Password Baru</label>
+                            <input type="password" id="settingEditPassword" placeholder="Kosongkan jika tidak diubah" class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-semibold text-sm">
+                        </div>
+                        <button onclick="saveUserCredentials()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-extrabold text-xs shadow-md transition">
+                            SIMPAN KREDENSIAL LOGIN
+                        </button>
+                    </div>
+
+                    <div class="glass-card rounded-3xl p-6 shadow-xl space-y-4">
+                        <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-palette text-indigo-500"></i>
+                            <span>4. Ubah Tampilan & Preferensi</span>
+                        </h3>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">Mode Tema Tampilan</label>
+                            <select id="settingThemeMode" class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-semibold text-sm">
+                                <option value="light">Terang (Light Mode)</option>
+                                <option value="dark">Gelap (Dark Mode)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1">Volume Default Audio Bell</label>
+                            <select id="settingDefaultVolume" class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-semibold text-sm">
+                                <option value="1.0">100% (Maksimal)</option>
+                                <option value="0.8">80%</option>
+                                <option value="0.5">50% (Sedang)</option>
+                            </select>
+                        </div>
+                        <button onclick="saveThemeAndPreferences()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-extrabold text-xs shadow-md transition mt-4">
+                            SIMPAN TAMPILAN & PREFERENSI
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 8: DISPLAY MODE -->
+            <div id="tab-display" class="space-y-6 max-w-7xl mx-auto hidden">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white">Mode Tampilan TV / Monitor Sekolah</h2>
+                        <p class="text-xs text-slate-500">Tampilan khusus untuk layar besar / proyektor di ruang guru atau lobi sekolah.</p>
+                    </div>
+                    <button onclick="openDisplayFullscreen()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-lg transition">
+                        <i class="fa-solid fa-expand mr-1"></i> Buka Fullscreen Display
+                    </button>
+                </div>
+
+                <div class="glass-card rounded-3xl p-8 lg:p-12 shadow-2xl text-center space-y-6 bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 text-white border-2 border-indigo-500/40">
+                    <div class="flex items-center justify-center space-x-3">
+                        <div id="displayHeaderLogoContainer" class="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg overflow-hidden">
+                            <i id="displayHeaderIcon" class="fa-solid fa-bell text-xl animate-bounce"></i>
+                            <img id="displayHeaderImg" src="" alt="Logo" class="w-full h-full object-cover hidden">
+                        </div>
+                        <div class="text-left">
+                            <h3 id="displaySchoolTitle" class="text-xl font-black tracking-wider">SD NEGERI 53 KOTA BENGKULU</h3>
+                            <p class="text-xs text-indigo-300">Sistem Informasi Bell Sekolah Otomatis Real-Time</p>
+                        </div>
+                    </div>
+
+                    <div class="py-8">
+                        <div id="displayClock" class="text-5xl lg:text-8xl font-black font-mono tracking-tight text-white drop-shadow-lg">07 : 00 : 00</div>
+                        <div id="displayDate" class="text-sm lg:text-lg font-semibold text-indigo-200 mt-2">Minggu, 9 Agustus 2026</div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto text-left">
+                        <div class="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/10">
+                            <span class="text-xs font-bold text-indigo-300 uppercase tracking-wider block mb-1">Bell Berikutnya</span>
+                            <div id="displayNextName" class="text-lg font-extrabold text-white">Bel Masuk Sekolah</div>
+                            <div id="displayNextTime" class="text-2xl font-black text-indigo-400 font-mono mt-1">07:15</div>
+                        </div>
+                        <div class="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/10">
+                            <span class="text-xs font-bold text-indigo-300 uppercase tracking-wider block mb-1">Hitung Mundur</span>
+                            <div id="displayCountdown" class="text-3xl font-black font-mono text-white mt-1">00:02:35</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <div id="ringingOverlay" class="fixed inset-0 z-50 bg-indigo-950/95 backdrop-blur-xl flex flex-col items-center justify-center p-6 text-white hidden">
+        <div class="w-32 h-32 rounded-full bg-indigo-600 flex items-center justify-center text-white text-6xl shadow-2xl pulse-ring mb-8">
+            <i class="fa-solid fa-bell"></i>
+        </div>
+        <h2 class="text-3xl lg:text-6xl font-black tracking-tight mb-2 text-center" id="ringingTitle">🔔 BELL BERBUNYI</h2>
+        <p class="text-xl lg:text-2xl font-bold text-indigo-300 mb-6 text-center" id="ringingSubtitle">Bel Masuk Sekolah</p>
+        <div class="px-6 py-3 bg-white/10 rounded-2xl border border-white/20 text-xl font-mono font-extrabold" id="ringingCounter">
+            Bunyi 1 / 2
+        </div>
+    </div>
+
+    <!-- LOGIN MODAL -->
+    <div id="loginModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-card rounded-3xl p-6 lg:p-8 max-w-md w-full shadow-2xl space-y-6">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xl font-extrabold text-slate-900 dark:text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-lock text-indigo-500"></i>
+                    <span>Login / Ganti Akun</span>
+                </h3>
+                <button onclick="closeLoginModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">Username</label>
+                    <input type="text" id="loginUsernameInput" value="admin53" placeholder="admin53" class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-semibold text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">Password</label>
+                    <input type="password" id="loginPasswordInput" value="admin123" placeholder="Password" class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-semibold text-sm">
+                </div>
+            </div>
+            <button onclick="performLogin()" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-extrabold text-sm shadow-lg transition">
+                MASUK KE SISTEM
+            </button>
+        </div>
+    </div>
+
+    <!-- SCHEDULE MODAL -->
+    <div id="scheduleModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-card rounded-3xl p-6 lg:p-8 max-w-lg w-full shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <h3 id="scheduleModalTitle" class="text-xl font-extrabold text-slate-900 dark:text-white">Tambah Jadwal Bell</h3>
+                <button onclick="closeScheduleModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <input type="hidden" id="editScheduleId">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">Nama Bell</label>
+                    <input type="text" id="schName" placeholder="Contoh: Bel Masuk" class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-semibold text-sm">
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">Waktu (HH:MM)</label>
+                        <input type="time" id="schTime" class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-semibold text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">Bunyi</label>
+                        <select id="schRepeat" class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-semibold text-sm">
+                            <option value="1">1×</option>
+                            <option value="2" selected>2×</option>
+                            <option value="3">3×</option>
+                            <option value="4">4×</option>
+                            <option value="5">5×</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">Jeda</label>
+                        <select id="schInterval" class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-semibold text-sm">
+                            <option value="1000">1 detik</option>
+                            <option value="2000" selected>2 detik</option>
+                            <option value="3000">3 detik</option>
+                            <option value="5000">5 detik</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">Upload Suara Bell (Opsional / Custom Audio)</label>
+                    <div class="p-3 rounded-xl bg-indigo-50 dark:bg-slate-900 border border-indigo-200 dark:border-slate-700 flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-indigo-700 dark:text-indigo-300 block">File Audio Kustom</span>
+                            <span id="schUploadedAudioName" class="text-[11px] text-slate-500">Menggunakan Synthesizer Chime</span>
+                        </div>
+                        <label class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold cursor-pointer hover:bg-indigo-700 transition">
+                            <i class="fa-solid fa-upload mr-1"></i> Upload MP3
+                            <input type="file" accept="audio/*" onchange="handleScheduleAudioUpload(event)" class="hidden">
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">Hari Aktif</label>
+                    <div class="grid grid-cols-4 gap-2 text-xs font-semibold">
+                        <label class="flex items-center space-x-2 p-2 rounded-lg bg-slate-100 dark:bg-slate-800"><input type="checkbox" name="schDays" value="Mon" checked class="accent-indigo-600"><span>Senin</span></label>
+                        <label class="flex items-center space-x-2 p-2 rounded-lg bg-slate-100 dark:bg-slate-800"><input type="checkbox" name="schDays" value="Tue" checked class="accent-indigo-600"><span>Selasa</span></label>
+                        <label class="flex items-center space-x-2 p-2 rounded-lg bg-slate-100 dark:bg-slate-800"><input type="checkbox" name="schDays" value="Wed" checked class="accent-indigo-600"><span>Rabu</span></label>
+                        <label class="flex items-center space-x-2 p-2 rounded-lg bg-slate-100 dark:bg-slate-800"><input type="checkbox" name="schDays" value="Thu" checked class="accent-indigo-600"><span>Kamis</span></label>
+                        <label class="flex items-center space-x-2 p-2 rounded-lg bg-slate-100 dark:bg-slate-800"><input type="checkbox" name="schDays" value="Fri" checked class="accent-indigo-600"><span>Jumat</span></label>
+                        <label class="flex items-center space-x-2 p-2 rounded-lg bg-slate-100 dark:bg-slate-800"><input type="checkbox" name="schDays" value="Sat"><span class="text-slate-400">Sabtu</span></label>
+                        <label class="flex items-center space-x-2 p-2 rounded-lg bg-slate-100 dark:bg-slate-800"><input type="checkbox" name="schDays" value="Sun"><span class="text-slate-400">Minggu</span></label>
+                    </div>
+                </div>
+            </div>
+            <button onclick="saveSchedule()" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-extrabold text-sm shadow-lg shadow-indigo-600/30 transition">
+                SIMPAN JADWAL
+            </button>
+        </div>
+    </div>
+
+    <!-- HOLIDAY MODAL -->
+    <div id="holidayModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-card rounded-3xl p-6 lg:p-8 max-w-md w-full shadow-2xl space-y-6">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xl font-extrabold text-slate-900 dark:text-white">Tambah Hari Libur</h3>
+                <button onclick="closeHolidayModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">Tanggal</label>
+                    <input type="date" id="holDate" class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-semibold text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">Nama Hari Libur / Acara</label>
+                    <input type="text" id="holName" placeholder="Contoh: Libur Nasional Kemerdekaan" class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-semibold text-sm">
+                </div>
+            </div>
+            <button onclick="saveHoliday()" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-extrabold text-sm shadow-lg transition">
+                SIMPAN HARI LIBUR
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = { username: 'admin53', role: 'Super Admin', passHash: 'admin123' };
+        let executedExecutionIds = new Set();
+        let audioCtx = null;
+        let backgroundWorker = null;
+
+        let appState = {
+            audioReady: false,
+            autoBellActive: true,
+            isMasterDevice: true,
+            deviceId: 'DEVICE-' + Math.random().toString(36).substring(2, 7).toUpperCase(),
+            schoolName: 'SD Negeri 53 Kota Bengkulu',
+            npsn: '10702456',
+            academicYear: '2026/2027',
+            schoolAddress: 'Jl. Contoh No. 53, Kota Bengkulu',
+            schoolLogoUrl: '',
+            themeMode: 'light',
+            defaultVolume: 1.0,
+            authUsers: [
+                { username: 'admin53', role: 'Super Admin', passHash: 'admin123' },
+                { username: 'operator1', role: 'Operator', passHash: 'op123' }
+            ],
+            schedules: [
+                { id: '1', time: '07:15', name: 'Bel Masuk Sekolah', repeat: 2, interval: 2000, days: ['Mon','Tue','Wed','Thu','Fri'], audioUrl: '', audioName: 'Synthesizer Chime', active: true },
+                { id: '2', time: '09:00', name: 'Istirahat Pertama', repeat: 1, interval: 2000, days: ['Mon','Tue','Wed','Thu','Fri'], audioUrl: '', audioName: 'Synthesizer Chime', active: true },
+                { id: '3', time: '09:30', name: 'Masuk Setelah Istirahat', repeat: 1, interval: 2000, days: ['Mon','Tue','Wed','Thu','Fri'], audioUrl: '', audioName: 'Synthesizer Chime', active: true },
+                { id: '4', time: '12:00', name: 'Bel Pulang Sekolah', repeat: 2, interval: 3000, days: ['Mon','Tue','Wed','Thu','Fri'], audioUrl: '', audioName: 'Synthesizer Chime', active: true }
+            ],
+            holidays: [
+                { id: 'h1', date: '2026-08-17', name: 'HUT Kemerdekaan RI', type: 'Libur Nasional' }
+            ],
+            history: [
+                { time: '09/08/2026 07:15:00', name: 'Bel Masuk Sekolah', repeat: 2, mode: 'Auto', device: 'MASTER', status: 'Berhasil' }
+            ],
+            aiAnnouncements: []
+        };
+
+        try {
+            const saved = localStorage.getItem('smart_school_bell_state_v15');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                appState = { ...appState, ...parsed };
+            }
+        } catch (e) {
+            console.error('Error loading localStorage:', e);
+        }
+
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('smart_school_bell_state_v15', JSON.stringify(appState));
+            } catch (e) {
+                console.error('Error saving localStorage:', e);
+            }
+        }
+
+        function toggleAudioPermission() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            appState.audioReady = true;
+            document.getElementById('audioInitBtn').className = "px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200 text-xs font-semibold flex items-center space-x-2 border border-emerald-300 dark:border-emerald-800 transition hover:scale-105 shadow-sm";
+            document.getElementById('audioIcon').className = "fa-solid fa-volume-high";
+            document.getElementById('audioStatusText').innerText = "AUDIO READY";
+            playChimeNote(880, 1.0, null, null);
+        }
+
+        function initBackgroundWorker() {
+            const workerCode = `
+                self.onmessage = function(e) {
+                    if (e.data === 'start') {
+                        setInterval(() => {
+                            const now = new Date();
+                            const optionsTime = { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+                            const timeStr = new Intl.DateTimeFormat('id-ID', optionsTime).format(now);
+                            const cleanTime = timeStr.replace(/\\./g, ':').replace(/\\s/g, '');
+                            const parts = cleanTime.split(':');
+                            const hhmm = parts.length >= 2 ? \`\${parts[0].padStart(2,'0')}:\${parts[1].padStart(2,'0')}\` : cleanTime.substring(0,5);
+                            
+                            const dayStr = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Jakarta', weekday: 'short' }).format(now);
+                            const dateYMD = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(now);
+
+                            self.postMessage({
+                                type: 'tick',
+                                cleanTime,
+                                hhmm,
+                                dayCode: dayStr.substring(0,3),
+                                dateYMD
+                            });
+                        }, 1000);
+                    }
+                };
+            `;
+            const blob = new Blob([workerCode], { type: 'application/javascript' });
+            backgroundWorker = new Worker(URL.createObjectURL(blob));
+            backgroundWorker.onmessage = function(e) {
+                if (e.data.type === 'tick') {
+                    handleWorkerTick(e.data);
+                }
+            };
+            backgroundWorker.postMessage('start');
+        }
+
+        let lastCheckedMinuteWorker = '';
+
+        function handleWorkerTick(data) {
+            const { cleanTime, hhmm, dayCode, dateYMD } = data;
+
+            const timeEl1 = document.getElementById('liveClock');
+            const timeEl2 = document.getElementById('displayClock');
+            if (timeEl1) timeEl1.innerText = cleanTime.replace(/:/g, ' : ');
+            if (timeEl2) timeEl2.innerText = cleanTime.replace(/:/g, ' : ');
+
+            if (hhmm !== lastCheckedMinuteWorker && hhmm.length === 5) {
+                lastCheckedMinuteWorker = hhmm;
+                if (appState.autoBellActive) {
+                    checkAndTriggerWorkerBell(hhmm, dayCode, dateYMD);
+                }
+            }
+
+            updateNextBellCountdown();
+        }
+
+        function checkAndTriggerWorkerBell(hhmm, dayCode, dateYMD) {
+            const isHoliday = appState.holidays.some(h => h.date === dateYMD);
+            if (isHoliday) return;
+
+            appState.schedules.forEach(sch => {
+                if (sch.active && sch.time === hhmm && sch.days.includes(dayCode)) {
+                    const execId = `AUTO-${dateYMD}-${sch.time.replace(':','')}-${sch.id}`;
+                    playBellSequence({
+                        name: sch.name,
+                        repeatCount: sch.repeat,
+                        interval: sch.interval || 2000,
+                        audioUrl: sch.audioUrl || null,
+                        mode: 'Auto',
+                        customExecutionId: execId
+                    });
+                }
+            });
+        }
+
+        async function playBellSequence({ name, repeatCount = 1, interval = 2000, audioUrl = null, mode = 'Manual', customExecutionId = null }) {
+            if (!audioCtx) {
+                try {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                } catch(e) {}
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            if (!appState.isMasterDevice && mode === 'Auto') {
+                return;
+            }
+            
+            const execId = customExecutionId || `BELL-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${Date.now()}`;
+            if (executedExecutionIds.has(execId)) {
+                return;
+            }
+            executedExecutionIds.add(execId);
+
+            const overlay = document.getElementById('ringingOverlay');
+            const subEl = document.getElementById('ringingSubtitle');
+            const counterEl = document.getElementById('ringingCounter');
+
+            if (overlay) overlay.classList.remove('hidden');
+            if (subEl) subEl.innerText = name;
+
+            for (let i = 1; i <= repeatCount; i++) {
+                if (counterEl) counterEl.innerText = `Bunyi ${i} / ${repeatCount}`;
+                
+                await new Promise((resolve) => {
+                    playChimeNote(880, 1.2, audioUrl, () => {
+                        resolve();
+                    });
+                });
+                
+                if (i < repeatCount) {
+                    await new Promise(resolve => setTimeout(resolve, interval));
+                } else {
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                }
+            }
+
+            if (overlay) overlay.classList.add('hidden');
+
+            const nowStr = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+            appState.history.unshift({
+                time: nowStr,
+                name: name,
+                repeat: repeatCount,
+                mode: mode,
+                device: appState.isMasterDevice ? 'MASTER' : 'DISPLAY',
+                status: 'Berhasil'
+            });
+            saveToLocalStorage();
+            renderHistoryTable();
+            renderTodaySchedule();
+        }
+
+        function playChimeNote(frequency = 880, duration = 1.0, audioUrl = null, onEndedCallback = null) {
+            let callbackFired = false;
+            const fireCallback = () => {
+                if (!callbackFired) {
+                    callbackFired = true;
+                    if (typeof onEndedCallback === 'function') onEndedCallback();
+                }
+            };
+
+            if (audioUrl) {
+                const audio = new Audio(audioUrl);
+                audio.volume = appState.defaultVolume || 1.0;
+                audio.onended = fireCallback;
+                audio.onerror = () => {
+                    playSynthChime(frequency, duration, false, fireCallback);
+                };
+                audio.play().catch(() => {
+                    playSynthChime(frequency, duration, false, fireCallback);
+                });
+                return;
+            }
+            playSynthChime(frequency, duration, false, fireCallback);
+        }
+
+        function playSynthChime(frequency = 880, duration = 1.0, isEmergency = false, onEndedCallback = null) {
+            if (!audioCtx) {
+                try {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    if (typeof onEndedCallback === 'function') onEndedCallback();
+                    return;
+                }
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const now = audioCtx.currentTime;
+
+            if (isEmergency) {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.linearRampToValueAtTime(800, now + 0.4);
+                osc.frequency.linearRampToValueAtTime(400, now + 0.8);
+                
+                gain.gain.setValueAtTime((appState.defaultVolume || 1.0) * 0.8, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 1.0);
+                setTimeout(() => {
+                    if (typeof onEndedCallback === 'function') onEndedCallback();
+                }, 1000);
+                return;
+            }
+
+            const freqs = [frequency, frequency * 1.5];
+            const totalDurationMs = (duration + 0.4) * 1000;
+            
+            freqs.forEach((f, idx) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(f, now);
+
+                gain.gain.setValueAtTime(((appState.defaultVolume || 1.0) * 0.5) / freqs.length, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + duration + idx * 0.2);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start(now);
+                osc.stop(now + duration + idx * 0.2);
+            });
+
+            setTimeout(() => {
+                if (typeof onEndedCallback === 'function') onEndedCallback();
+            }, totalDurationMs);
+        }
+
+        function triggerEmergencyBell() {
+            if (confirm("Apakah Anda yakin ingin membunyikan Emergency Bell / Sirene Darurat?")) {
+                playBellSequence({
+                    name: 'EMERGENCY / SIRENE DARURAT',
+                    repeatCount: 3,
+                    interval: 1500,
+                    mode: 'Manual'
+                });
+            }
+        }
+
+        function testBellQuick(count) {
+            playBellSequence({
+                name: `Uji Coba Bell (${count}×)`,
+                repeatCount: count,
+                interval: 2000,
+                mode: 'Manual'
+            });
+        }
+
+        // ================= TEXT-TO-SPEECH (TTS) =================
+        function applyTtsTemplate() {
+            const templateSelect = document.getElementById('ttsTemplateSelect');
+            const ttsInput = document.getElementById('ttsTextInput');
+            if (templateSelect && ttsInput && templateSelect.value) {
+                ttsInput.value = templateSelect.value;
+            }
+        }
+
+        function speakAnnouncement() {
+            const text = document.getElementById('ttsTextInput').value.trim();
+            const gender = document.getElementById('ttsVoiceGender').value;
+            const rate = parseFloat(document.getElementById('ttsRate').value);
+            let pitch = parseFloat(document.getElementById('ttsPitch').value);
+
+            if (!text) {
+                alert("Masukkan teks pengumuman terlebih dahulu.");
+                return;
+            }
+
+            if (!('speechSynthesis' in window)) {
+                alert("Browser Anda tidak mendukung Text-to-Speech.");
+                return;
+            }
+
+            if (gender === 'female') {
+                pitch = Math.max(pitch, 1.2);
+            } else if (gender === 'male') {
+                pitch = Math.min(pitch, 0.7);
+            }
+
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'id-ID';
+            utterance.rate = rate;
+            utterance.pitch = pitch;
+            utterance.volume = appState.defaultVolume || 1.0;
+
+            const voices = window.speechSynthesis.getVoices();
+            const idVoices = voices.filter(v => v.lang.includes('id') || v.lang.includes('ID'));
+            if (idVoices.length > 0) {
+                if (gender === 'female') {
+                    const femaleVoice = idVoices.find(v => v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('wanita') || v.name.toLowerCase().includes('amelia') || v.name.toLowerCase().includes('siti'));
+                    utterance.voice = femaleVoice || idVoices[0];
+                } else if (gender === 'male') {
+                    const maleVoice = idVoices.find(v => v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('pria') || v.name.toLowerCase().includes('andika'));
+                    utterance.voice = maleVoice || idVoices[0];
+                }
+            }
+
+            window.speechSynthesis.speak(utterance);
+            alert("Memutar pengumuman suara...");
+        }
+
+        function updateNextBellCountdown() {
+            const now = new Date();
+            const nowSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+
+            const activeSchedules = appState.schedules
+                .filter(s => s.active)
+                .map(s => {
+                    const [hh, mm] = s.time.split(':').map(Number);
+                    return { ...s, totalSec: hh * 3600 + mm * 60 };
+                })
+                .sort((a, b) => a.totalSec - b.totalSec);
+
+            let nextSch = activeSchedules.find(s => s.totalSec > nowSeconds);
+            if (!nextSch && activeSchedules.length > 0) {
+                nextSch = activeSchedules[0];
+            }
+
+            if (nextSch) {
+                const nameEl1 = document.getElementById('nextBellName');
+                const timeEl1 = document.getElementById('nextBellTime');
+                const nameEl2 = document.getElementById('displayNextName');
+                const timeEl2 = document.getElementById('displayNextTime');
+                if (nameEl1) nameEl1.innerText = nextSch.name;
+                if (timeEl1) timeEl1.innerText = nextSch.time;
+                if (nameEl2) nameEl2.innerText = nextSch.name;
+                if (timeEl2) timeEl2.innerText = nextSch.time;
+
+                let diff = nextSch.totalSec - nowSeconds;
+                if (diff < 0) diff += 86400;
+
+                const hrs = Math.floor(diff / 3600).toString().padStart(2, '0');
+                const mins = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
+                const secs = (diff % 60).toString().padStart(2, '0');
+
+                const countdownStr = `${hrs}:${mins}:${secs}`;
+                const countEl1 = document.getElementById('countdownTimer');
+                const countEl2 = document.getElementById('displayCountdown');
+                if (countEl1) countEl1.innerText = countdownStr;
+                if (countEl2) countEl2.innerText = countdownStr;
+            }
+        }
+
+        function switchTab(tabId) {
+            ['dashboard', 'schedules', 'tts', 'gemini', 'calendar', 'history', 'settings', 'display'].forEach(id => {
+                const el = document.getElementById(`tab-${id}`);
+                const nav = document.getElementById(`nav-${id}`);
+                if (el) el.classList.add('hidden');
+                if (nav) {
+                    nav.className = "w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-sm transition";
+                }
+            });
+
+            const targetEl = document.getElementById(`tab-${tabId}`);
+            const targetNav = document.getElementById(`nav-${tabId}`);
+            if (targetEl) targetEl.classList.remove('hidden');
+            if (targetNav) {
+                targetNav.className = "w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl bg-indigo-600 text-white font-bold text-sm shadow-md shadow-indigo-600/30 transition";
+            }
+        }
+
+        function toggleMasterDevice() {
+            appState.isMasterDevice = !appState.isMasterDevice;
+            const badge = document.getElementById('deviceBadge');
+            const text = document.getElementById('deviceRoleText');
+            const label = document.getElementById('activeDeviceLabel');
+
+            if (appState.isMasterDevice) {
+                badge.className = "cursor-pointer px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200 text-xs font-semibold flex items-center space-x-2 border border-emerald-300 dark:border-emerald-800 shadow-sm";
+                text.innerText = "MASTER DEVICE";
+                if (label) label.innerText = "Master PC (Audio Active)";
+            } else {
+                badge.className = "cursor-pointer px-3 py-1.5 rounded-xl bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200 text-xs font-semibold flex items-center space-x-2 border border-amber-300 dark:border-amber-800 shadow-sm";
+                text.innerText = "DISPLAY ONLY";
+                if (label) label.innerText = "Display Only (Audio Muted)";
+            }
+            saveToLocalStorage();
+        }
+
+        function toggleAutoBell() {
+            appState.autoBellActive = !appState.autoBellActive;
+            const statusBadge = document.getElementById('autoBellStatusBadge');
+            const toggleBtn = document.getElementById('autoBellToggleBtn');
+
+            if (appState.autoBellActive) {
+                if (statusBadge) { statusBadge.innerText = "AKTIF"; statusBadge.className = "text-emerald-600 font-extrabold"; }
+                if (toggleBtn) { toggleBtn.innerText = "Matikan Auto Bell"; toggleBtn.className = "w-full mt-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm"; }
+            } else {
+                if (statusBadge) { statusBadge.innerText = "NONAKTIF"; statusBadge.className = "text-rose-600 font-extrabold"; }
+                if (toggleBtn) { toggleBtn.innerText = "Aktifkan Auto Bell"; toggleBtn.className = "w-full mt-1 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition shadow-sm"; }
+            }
+            saveToLocalStorage();
+        }
+
+        let currentSchAudioUrl = null;
+        let currentSchAudioName = null;
+
+        function openScheduleModal() {
+            document.getElementById('editScheduleId').value = '';
+            document.getElementById('schName').value = '';
+            document.getElementById('schTime').value = '07:00';
+            currentSchAudioUrl = null;
+            currentSchAudioName = null;
+            document.getElementById('schUploadedAudioName').innerText = 'Menggunakan Synthesizer Chime';
+            document.getElementById('scheduleModalTitle').innerText = 'Tambah Jadwal Bell';
+            document.getElementById('scheduleModal').classList.remove('hidden');
+        }
+
+        function closeScheduleModal() {
+            document.getElementById('scheduleModal').classList.add('hidden');
+        }
+
+        function editSchedule(id) {
+            const sch = appState.schedules.find(s => s.id === id);
+            if (!sch) return;
+            document.getElementById('editScheduleId').value = sch.id;
+            document.getElementById('schName').value = sch.name;
+            document.getElementById('schTime').value = sch.time;
+            document.getElementById('schRepeat').value = sch.repeat;
+            document.getElementById('schInterval').value = sch.interval || 2000;
+            currentSchAudioUrl = sch.audioUrl || null;
+            currentSchAudioName = sch.audioName || null;
+            document.getElementById('schUploadedAudioName').innerText = sch.audioName || 'Menggunakan Synthesizer Chime';
+            
+            const checkboxes = document.querySelectorAll('input[name="schDays"]');
+            checkboxes.forEach(cb => {
+                cb.checked = sch.days.includes(cb.value);
+            });
+
+            document.getElementById('scheduleModalTitle').innerText = 'Edit Jadwal Bell';
+            document.getElementById('scheduleModal').classList.remove('hidden');
+        }
+
+        function handleScheduleAudioUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentSchAudioUrl = e.target.result;
+                currentSchAudioName = file.name;
+                document.getElementById('schUploadedAudioName').innerText = file.name;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function saveSchedule() {
+            const id = document.getElementById('editScheduleId').value;
+            const name = document.getElementById('schName').value || 'Bell Sekolah';
+            const time = document.getElementById('schTime').value || '07:00';
+            const repeat = parseInt(document.getElementById('schRepeat').value);
+            const interval = parseInt(document.getElementById('schInterval').value);
+            const audioName = currentSchAudioName || 'Synthesizer Chime';
+            const audioUrl = currentSchAudioUrl || '';
+            const days = Array.from(document.querySelectorAll('input[name="schDays"]:checked')).map(el => el.value);
+
+            let schObj = {
+                id: id || Date.now().toString(),
+                name,
+                time,
+                repeat,
+                interval,
+                audioName,
+                audioUrl,
+                days,
+                active: true
+            };
+
+            if (id) {
+                const idx = appState.schedules.findIndex(s => s.id === id);
+                if (idx !== -1) {
+                    appState.schedules[idx] = { ...appState.schedules[idx], ...schObj };
+                }
+            } else {
+                appState.schedules.push(schObj);
+            }
+
+            saveToLocalStorage();
+            renderSchedulesTable();
+            renderTodaySchedule();
+            closeScheduleModal();
+        }
+
+        function toggleScheduleActive(id) {
+            const sch = appState.schedules.find(s => s.id === id);
+            if (sch) {
+                sch.active = !sch.active;
+                saveToLocalStorage();
+                renderSchedulesTable();
+                renderTodaySchedule();
+            }
+        }
+
+        function deleteSchedule(id) {
+            if (confirm("Hapus jadwal ini?")) {
+                appState.schedules = appState.schedules.filter(s => s.id !== id);
+                saveToLocalStorage();
+                renderSchedulesTable();
+                renderTodaySchedule();
+            }
+        }
+
+        // ================= GEMINI API INTEGRATION =================
+        async function generateGeminiContent() {
+            const promptType = document.getElementById('aiPromptType').value;
+            const extraNote = document.getElementById('aiPromptInput').value.trim();
+            const outputEl = document.getElementById('aiResultOutput');
+            const statusEl = document.getElementById('aiStatusBadge');
+            const submitBtn = document.getElementById('aiSubmitBtn');
+
+            let promptText = "";
+
+            if (promptType === 'announcement') {
+                promptText = `Buatlah naskah pengumuman suara sekolah dasar (${appState.schoolName}) yang ramah, sopan, dan jelas untuk dibacakan setelah bell istirahat atau pulang sekolah. Tambahan catatan: ${extraNote || 'Tidak ada'}.`;
+            } else if (promptType === 'ceremony') {
+                promptText = `Buatlah draf rekomendasi susunan acara upacara bendera hari Senin yang ringkas dan padat untuk tingkat sekolah dasar. Tambahan catatan: ${extraNote || 'Tidak ada'}.`;
+            } else {
+                promptText = `Buatlah 3 kalimat motivasi singkat bernuansa disiplin dan semangat belajar pagi hari untuk siswa-siswi ${appState.schoolName}. Catatan tambahan: ${extraNote || 'Tidak ada'}.`;
+            }
+
+            outputEl.innerText = "Menghubungkan ke Gemini AI Studio...";
+            statusEl.innerText = "Memproses...";
+            submitBtn.disabled = true;
+
+            try {
+                const systemPrompt = "Anda adalah asisten AI profesional untuk sistem manajemen bell dan administrasi sekolah dasar di Indonesia.";
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: promptText }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] }
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                const candidate = result.candidates?.[0];
+
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    outputEl.innerText = candidate.content.parts[0].text;
+                    statusEl.innerText = "Berhasil (Gemini AI)";
+                } else {
+                    outputEl.innerText = "Gagal mendapatkan respon dari AI.";
+                    statusEl.innerText = "Error";
+                }
+            } catch (err) {
+                console.error("Gemini API error:", err);
+                outputEl.innerText = "Terjadi kesalahan koneksi ke API Gemini.";
+                statusEl.innerText = "Koneksi Gagal";
+            } finally {
+                submitBtn.disabled = false;
+            }
+        }
+
+        function copyAiResult() {
+            const text = document.getElementById('aiResultOutput').innerText;
+            if (!text || text.includes("Hasil AI") || text.includes("Menghubungkan")) return;
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            alert("Teks berhasil disalin ke clipboard!");
+        }
+
+        function saveAiAnnouncement() {
+            const text = document.getElementById('aiResultOutput').innerText;
+            const promptType = document.getElementById('aiPromptType').value;
+            if (!text || text.includes("Hasil AI") || text.includes("Menghubungkan")) return;
+
+            const categoryName = promptType === 'announcement' ? 'Pengumuman' : (promptType === 'ceremony' ? 'Upacara' : 'Motivasi');
+            const nowStr = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+
+            appState.aiAnnouncements.unshift({
+                id: 'ai-' + Date.now(),
+                time: nowStr,
+                category: categoryName,
+                content: text
+            });
+            saveToLocalStorage();
+            renderAiAnnouncementsTable();
+            alert("Hasil Gemini AI berhasil disimpan ke daftar pengumuman.");
+        }
+
+        function deleteAiAnnouncement(id) {
+            appState.aiAnnouncements = appState.aiAnnouncements.filter(item => item.id !== id);
+            saveToLocalStorage();
+            renderAiAnnouncementsTable();
+        }
+
+        function renderAiAnnouncementsTable() {
+            const tbody = document.getElementById('aiAnnouncementsTableBody');
+            if (!tbody) return;
+            if (appState.aiAnnouncements.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-slate-400">Belum ada catatan atau naskah AI tersimpan.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = appState.aiAnnouncements.map(item => `
+                <tr class="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                    <td class="py-3 px-4 font-mono text-[11px]">${item.time}</td>
+                    <td class="py-3 px-4"><span class="px-2 py-0.5 bg-indigo-100 text-indigo-800 rounded-md text-[10px] font-bold">${item.category}</span></td>
+                    <td class="py-3 px-4 text-slate-700 dark:text-slate-300 max-w-md truncate">${item.content}</td>
+                    <td class="py-3 px-4 text-right space-x-2">
+                        <button onclick="navigator.clipboard.writeText(\`${item.content.replace(/`/g, '')}\`); alert('Disalin!');" class="text-indigo-600 hover:text-indigo-800 font-bold" title="Salin"><i class="fa-solid fa-copy"></i></button>
+                        <button onclick="deleteAiAnnouncement('${item.id}')" class="text-rose-600 hover:text-rose-800 font-bold" title="Hapus"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openHolidayModal() {
+            document.getElementById('holDate').value = new Date().toISOString().slice(0,10);
+            document.getElementById('holName').value = '';
+            document.getElementById('holidayModal').classList.remove('hidden');
+        }
+
+        function closeHolidayModal() {
+            document.getElementById('holidayModal').classList.add('hidden');
+        }
+
+        function saveHoliday() {
+            const date = document.getElementById('holDate').value;
+            const name = document.getElementById('holName').value || 'Hari Libur';
+            if (!date) return;
+            appState.holidays.push({ id: 'hol-' + Date.now(), date, name, type: 'Libur Nasional' });
+            saveToLocalStorage();
+            renderHolidaysTable();
+            closeHolidayModal();
+        }
+
+        function deleteHoliday(id) {
+            appState.holidays = appState.holidays.filter(h => h.id !== id);
+            saveToLocalStorage();
+            renderHolidaysTable();
+        }
+
+        function renderHolidaysTable() {
+            const tbody = document.getElementById('holidayTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = appState.holidays.map(h => `
+                <tr class="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                    <td class="py-3 px-4 font-mono">${h.date}</td>
+                    <td class="py-3 px-4 font-bold">${h.name}</td>
+                    <td class="py-3 px-4"><span class="px-2 py-0.5 bg-rose-100 text-rose-800 rounded-md text-[10px] font-bold">${h.type}</span></td>
+                    <td class="py-3 px-4 text-right">
+                        <button onclick="deleteHoliday('${h.id}')" class="text-rose-600 hover:text-rose-800 text-xs font-bold"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderTodaySchedule() {
+            const tbody = document.getElementById('todayScheduleTableBody');
+            if (!tbody) return;
+            const now = new Date();
+            const localDayNameStr = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Jakarta', weekday: 'short' }).format(now);
+            const currentDayCode = localDayNameStr.substring(0,3);
+
+            const todays = appState.schedules.filter(s => s.days.includes(currentDayCode)).sort((a,b) => a.time.localeCompare(b.time));
+
+            if (todays.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-400">Tidak ada jadwal bell untuk hari ini.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = todays.map(s => `
+                <tr class="border-b border-slate-200 dark:border-slate-800">
+                    <td class="py-3 px-4 font-mono font-bold">${s.time}</td>
+                    <td class="py-3 px-4">${s.name}</td>
+                    <td class="py-3 px-4">${s.repeat}×</</td>
+                    <td class="py-3 px-4">${(s.interval/1000)} detik</td>
+                    <td class="py-3 px-4">${s.audioName}</td>
+                    <td class="py-3 px-4"><span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-md text-[10px] font-bold">Aktif</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function renderSchedulesTable() {
+            const tbody = document.getElementById('fullScheduleTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = appState.schedules.map((s, idx) => `
+                <tr class="border-b border-slate-200 dark:border-slate-800">
+                    <td class="py-3 px-4">${idx + 1}</td>
+                    <td class="py-3 px-4 font-mono font-bold">${s.time}</td>
+                    <td class="py-3 px-4 font-bold">${s.name}</td>
+                    <td class="py-3 px-4">${s.repeat}×</</td>
+                    <td class="py-3 px-4">${(s.interval/1000)}s</td>
+                    <td class="py-3 px-4">${s.audioName}</td>
+                    <td class="py-3 px-4 text-[11px] text-slate-500">${s.days.join(', ')}</td>
+                    <td class="py-3 px-4">
+                        <button onclick="toggleScheduleActive('${s.id}')" class="px-2 py-0.5 rounded-md text-[10px] font-bold ${s.active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}">
+                            ${s.active ? 'Aktif' : 'Nonaktif'}
+                        </button>
+                    </td>
+                    <td class="py-3 px-4 text-right space-x-2">
+                        <button onclick="editSchedule('${s.id}')" class="text-indigo-600 hover:text-indigo-800 font-bold"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="deleteSchedule('${s.id}')" class="text-rose-600 hover:text-rose-800 font-bold"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderHistoryTable() {
+            const tbody = document.getElementById('historyTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = appState.history.map(h => `
+                <tr class="border-b border-slate-200 dark:border-slate-800">
+                    <td class="py-3 px-4 font-mono">${h.time}</td>
+                    <td class="py-3 px-4 font-bold">${h.name}</td>
+                    <td class="py-3 px-4">${h.repeat}×</</td>
+                    <td class="py-3 px-4">${h.mode}</td>
+                    <td class="py-3 px-4 font-mono text-[11px]">${h.device}</td>
+                    <td class="py-3 px-4"><span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-md text-[10px] font-bold">${h.status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function clearHistory() {
+            appState.history = [];
+            saveToLocalStorage();
+            renderHistoryTable();
+        }
+
+        // ================= SETTINGS FUNCTIONS =================
+        function applySchoolBranding() {
+            const name = appState.schoolName || 'SD Negeri 53 Kota Bengkulu';
+            const npsn = appState.npsn || '10702456';
+            const year = appState.academicYear || '2026/2027';
+            const addr = appState.schoolAddress || 'Kota Bengkulu';
+            const logo = appState.schoolLogoUrl || '';
+
+            const titleEl = document.getElementById('brandSchoolTitle');
+            if (titleEl) {
+                titleEl.innerHTML = `<span>SMART SCHOOL BELL</span> <span id="brandSchoolBadge" class="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 text-[10px] rounded-full uppercase font-bold tracking-wider">${name} (NPSN: ${npsn})</span>`;
+            }
+            const addrSub = document.getElementById('brandSchoolAddressSub');
+            if (addrSub) addrSub.innerText = addr;
+            const dashLabel = document.getElementById('dashboardSchoolLabel');
+            if (dashLabel) dashLabel.innerText = `Sekolah: ${name} | TA: ${year}`;
+            const displayTitle = document.getElementById('displaySchoolTitle');
+            if (displayTitle) displayTitle.innerText = name.toUpperCase();
+
+            // Theme mode
+            if (appState.themeMode === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+
+            const headerIcon = document.getElementById('brandHeaderIcon');
+            const headerImg = document.getElementById('brandHeaderImg');
+            const displayIcon = document.getElementById('displayHeaderIcon');
+            const displayImg = document.getElementById('displayHeaderImg');
+            const settingPrevIcon = document.getElementById('settingLogoPreviewIcon');
+            const settingPrevImg = document.getElementById('settingLogoPreviewImg');
+
+            if (logo) {
+                if (headerIcon) headerIcon.classList.add('hidden');
+                if (headerImg) { headerImg.src = logo; headerImg.classList.remove('hidden'); }
+                if (displayIcon) displayIcon.classList.add('hidden');
+                if (displayImg) { displayImg.src = logo; displayImg.classList.remove('hidden'); }
+                if (settingPrevIcon) settingPrevIcon.classList.add('hidden');
+                if (settingPrevImg) { settingPrevImg.src = logo; settingPrevImg.classList.remove('hidden'); }
+            } else {
+                if (headerIcon) headerIcon.classList.remove('hidden');
+                if (headerImg) headerImg.classList.add('hidden');
+                if (displayIcon) displayIcon.classList.remove('hidden');
+                if (displayImg) displayImg.classList.add('hidden');
+                if (settingPrevIcon) settingPrevIcon.classList.remove('hidden');
+                if (settingPrevImg) settingPrevImg.classList.add('hidden');
+            }
+        }
+
+        function saveSchoolIdentity() {
+            const nameEl = document.getElementById('settingSchoolName');
+            const npsnEl = document.getElementById('settingNpsn');
+            const yearEl = document.getElementById('settingAcademicYear');
+            const addrEl = document.getElementById('settingSchoolAddress');
+
+            if (nameEl && nameEl.value.trim()) appState.schoolName = nameEl.value.trim();
+            if (npsnEl && npsnEl.value.trim()) appState.npsn = npsnEl.value.trim();
+            if (yearEl && yearEl.value.trim()) appState.academicYear = yearEl.value.trim();
+            if (addrEl && addrEl.value.trim()) appState.schoolAddress = addrEl.value.trim();
+
+            saveToLocalStorage();
+            applySchoolBranding();
+            alert("Identitas sekolah berhasil diperbarui.");
+        }
+
+        function handleLogoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                appState.schoolLogoUrl = e.target.result;
+                saveToLocalStorage();
+                applySchoolBranding();
+                alert("Logo sekolah berhasil diunggah!");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeSchoolLogo() {
+            appState.schoolLogoUrl = '';
+            saveToLocalStorage();
+            applySchoolBranding();
+            alert("Logo sekolah berhasil dihapus.");
+        }
+
+        function onUserSelectChange() {
+            const selectEl = document.getElementById('settingUserSelect');
+            if (!selectEl) return;
+            const selectedUsername = selectEl.value;
+            const userObj = appState.authUsers.find(u => u.username === selectedUsername);
+            const editUserEl = document.getElementById('settingEditUsername');
+            const editPassEl = document.getElementById('settingEditPassword');
+            if (userObj && editUserEl) {
+                editUserEl.value = userObj.username;
+                if (editPassEl) editPassEl.value = '';
+            }
+        }
+
+        function saveUserCredentials() {
+            const selectEl = document.getElementById('settingUserSelect');
+            const editUserEl = document.getElementById('settingEditUsername');
+            const editPassEl = document.getElementById('settingEditPassword');
+            if (!selectEl || !editUserEl) return;
+
+            const targetUsername = selectEl.value;
+            const newUsername = editUserEl.value.trim();
+            const newPassword = editPassEl ? editPassEl.value : '';
+
+            const userObj = appState.authUsers.find(u => u.username === targetUsername);
+            if (!userObj) {
+                alert("Akun tidak ditemukan.");
+                return;
+            }
+
+            if (newUsername) {
+                userObj.username = newUsername;
+            }
+            if (newPassword) {
+                userObj.passHash = newPassword;
+            }
+
+            saveToLocalStorage();
+
+            if (currentUser.role === userObj.role || currentUser.username === targetUsername) {
+                currentUser = userObj;
+                const userNameDisplay = document.getElementById('userNameDisplay');
+                const userRoleDisplay = document.getElementById('userRoleDisplay');
+                const userAvatar = document.getElementById('userAvatar');
+                if (userNameDisplay) userNameDisplay.innerText = userObj.username;
+                if (userRoleDisplay) userRoleDisplay.innerText = userObj.role;
+                if (userAvatar) userAvatar.innerText = userObj.username.charAt(0).toUpperCase();
+            }
+
+            selectEl.innerHTML = appState.authUsers.map(u => `<option value="${u.username}" ${u.username === userObj.username ? 'selected' : ''}>${u.username} (${u.role})</option>`).join('');
+
+            alert("Kredensial login berhasil diperbarui.");
+        }
+
+        function saveThemeAndPreferences() {
+            const modeEl = document.getElementById('settingThemeMode');
+            const volEl = document.getElementById('settingDefaultVolume');
+            if (!modeEl || !volEl) return;
+
+            appState.themeMode = modeEl.value;
+            appState.defaultVolume = parseFloat(volEl.value);
+            saveToLocalStorage();
+            applySchoolBranding();
+            alert("Tampilan halaman & preferensi audio berhasil disimpan.");
+        }
+
+        function openLoginModal() {
+            const modal = document.getElementById('loginModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeLoginModal() {
+            const modal = document.getElementById('loginModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function performLogin() {
+            const usernameInput = document.getElementById('loginUsernameInput').value.trim();
+            const passwordInput = document.getElementById('loginPasswordInput').value;
+
+            const found = appState.authUsers.find(u => u.username === usernameInput && u.passHash === passwordInput);
+            if (found) {
+                currentUser = found;
+                document.getElementById('userNameDisplay').innerText = found.username;
+                document.getElementById('userRoleDisplay').innerText = found.role;
+                document.getElementById('userAvatar').innerText = found.username.charAt(0).toUpperCase();
+                closeLoginModal();
+                alert(`Berhasil login sebagai ${found.role} (${found.username}).`);
+            } else {
+                alert("Username atau password salah! (Coba default: admin53 / admin123)");
+            }
+        }
+
+        function openDisplayFullscreen() {
+            switchTab('display');
+            try {
+                const elem = document.documentElement;
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen().catch(() => {});
+                }
+            } catch (e) {}
+        }
+
+        function toggleFullScreen() {
+            try {
+                if (!document.fullscreenElement) {
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen().catch(() => {});
+                    }
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen().catch(() => {});
+                    }
+                }
+            } catch (e) {}
+        }
+
+        // Initialize UI on Load
+        window.addEventListener('DOMContentLoaded', () => {
+            initBackgroundWorker();
+
+            const schNameEl = document.getElementById('settingSchoolName');
+            const npsnEl = document.getElementById('settingNpsn');
+            const acadEl = document.getElementById('settingAcademicYear');
+            const addrEl = document.getElementById('settingSchoolAddress');
+            const modeEl = document.getElementById('settingThemeMode');
+            const volEl = document.getElementById('settingDefaultVolume');
+
+            if (schNameEl) schNameEl.value = appState.schoolName || '';
+            if (npsnEl) npsnEl.value = appState.npsn || '';
+            if (acadEl) acadEl.value = appState.academicYear || '';
+            if (addrEl) addrEl.value = appState.schoolAddress || '';
+            if (modeEl) modeEl.value = appState.themeMode || 'light';
+            if (volEl) volEl.value = appState.defaultVolume || 1.0;
+
+            const selectEl = document.getElementById('settingUserSelect');
+            if (selectEl) {
+                selectEl.innerHTML = appState.authUsers.map(u => `<option value="${u.username}">${u.username} (${u.role})</option>`).join('');
+                const editUserEl = document.getElementById('settingEditUsername');
+                if (editUserEl && appState.authUsers.length > 0) {
+                    editUserEl.value = appState.authUsers[0].username;
+                }
+            }
+
+            applySchoolBranding();
+            renderTodaySchedule();
+            renderSchedulesTable();
+            renderHolidaysTable();
+            renderHistoryTable();
+            renderAiAnnouncementsTable();
+        });
+    </script>
+</body>
+</html>
